@@ -251,20 +251,19 @@ class ScriptProcess(object):
         else:
             process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
 
-        output_str = ''
-        while process.poll() is None:
-            output_ = process.stdout.readline().decode('utf-8').strip()
-            if output_ != '':
-                output_str += output_ + '\n'
-                print(output_)
-        else:
-            print(process.stdout.readlines())
+        output_list = []
+        while True:
+            for line in process.stdout.readlines():
+                output_list.append(line.decode('utf-8').strip())
+                print(line.decode('utf-8').strip())
+            if process.poll() is not None:
+                break
 
         output = self.output('w')
-        output.write(output_str)
+        output.write('\n'.join(output_list))
         output.close()
         # TODO: Dynamic output check
-        output_clean = self.output_process_class(output_str)
+        output_clean = self.output_process_class('\n'.join(output_list))
         #print(output_clean.strip())
         os.unlink(self.script)
         return output_clean.strip()
