@@ -239,26 +239,34 @@ class ScriptProcess(object):
         del gds
 
     def execute_script(self):
-        output = self.output('w')
         if 'win' in sys.platform:
             info = subprocess.STARTUPINFO()
             info.dwFlags = subprocess.STARTF_USESHOWWINDOW
             info.wShowWindow = 0 # SW_HIDE
             process = subprocess.Popen(
                 self.command,
-                stdout=output,
+                stdout=subprocess.PIPE,
                 startupinfo=info
             )
         else:
-            process = subprocess.Popen(self.command, stdout=output)
-        process.wait(max(10, self.script_body.timer*2))
+            process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
+
+        output_str = ''
+        while process.poll() is None:
+            output_ = process.stdout.readline().decode('utf-8').strip()
+            if output_ != '':
+                output_str += output_ + '\n'
+                print(output_)
+        else:
+            print(process.stdout.readlines())
+
+        output = self.output('w')
+        output.write(output_str)
         output.close()
-        output = self.output('r')
-        output_clean = self.output_process_class(output.read())
-        output.close()
+        # TODO: Dynamic output check
+        output_clean = self.output_process_class(output_str)
         #print(output_clean.strip())
         os.unlink(self.script)
-        os.chdir(HERE)
         return output_clean.strip()
 
     def exec_godot_script(self):
