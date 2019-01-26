@@ -1,16 +1,16 @@
 # GDScript CLI
 
-GDScript CLI implementation
+GDScript CLI wrapper
 
-![status](https://img.shields.io/badge/status-200%25_unstable-red.svg?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.4%2B-blue.svg?style=flat-square)
+![python](https://img.shields.io/badge/Godot-3.0%2B-blue.svg?style=flat-square)
 ![license](https://img.shields.io/github/license/williamd1k0/gdscript-cli.svg?style=flat-square)
 
 # About
 
-This project is a cli implementation of the GDScript.
+This project is a command-line wrapper for GDScript.
 
-GD Script is the language used in Godot Game Engine (more info about Godot [here](https://godotengine.org/)).
+GDScript is the language used in Godot Game Engine (more info about Godot [here](https://godotengine.org/)).
 
 # Why
 
