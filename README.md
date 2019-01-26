@@ -24,7 +24,7 @@ So, this project is a tool to execute simple and complex scripts, direct from cl
 
 # Project Structure
 
-This tool is implemented using built-in script command. I have some points to reuse the built-in command instead of writing a GDScript parser:
+This tool is implemented using built-in script command (`godot -s`). I have some points to reuse the built-in command instead of writing a GDScript parser:
 
 1. I started this project using my spare time, so I'll take too long implementing a parser from scratch.
 
@@ -36,11 +36,7 @@ This tool is implemented using built-in script command. I have some points to re
 
 # Main Goals
 
-I said above that my focus is on rapid implementation, but why?
-
-Godot Engine is becoming very popular and new users need an easy way to try GDScript while they are waiting for Godot 3.0.
-
-Jokes aside. The main goal is run GDScript through a web server. It will ease snippet tests, especially for new users.
+The main goal is run GDScript through a web server. It will ease snippet tests, especially for new users.
 
 The other goal is run GDScript easily from cli, no need to create a new project just to test a simple script (GDScript as general-purpose language intensifies).
 
