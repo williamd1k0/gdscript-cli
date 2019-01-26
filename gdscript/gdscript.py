@@ -36,12 +36,12 @@ THE SOFTWARE.
 import os
 import subprocess
 import sys
+import re
 
 
 __version__ = 0, 1, 0
 
-VERBOSE = True
-HERE = os.getcwd()
+VERBOSE = False
 #GODOT_BINARY = r'./Godot_v2.1.2-stable_linux_server.64'
 GODOT_BINARY = os.environ.get('GODOT_BINARY', 'godot.exe')
 DEFAULT_OUTPUT = os.environ.get('DEFAULT_OUTPUT', 'windows')
@@ -60,8 +60,7 @@ class GodotScript(object):
     MODE_CLASS = 1
     MODE_SIMPLE = 2
 
-    CLASS_BODY = """
-extends SceneTree
+    CLASS_BODY = """extends SceneTree
 {body}
 func _init():
     var timer = Timer.new()
@@ -74,15 +73,12 @@ func _init():
     quit()
 """
 # TODO: Add wait mode - requires get_tree().quit()
-# FIXME: ObjectDB::cleanup: ObjectDB Instances still exist!
 
-    EXTENDS_BODY = """
-class GodotClass:
+    EXTENDS_BODY = """class __GeneratedGodotClass__:
 {body}
 """
 
-    SIMPLE_BODY = """
-extends Node
+    SIMPLE_BODY = """extends Node
 func _ready():
 {body}
 """
@@ -93,14 +89,17 @@ func _ready():
         self.mode = mode
         self.timer = timer
         self.path = path
+        self.map_lines = 1
 
     @property
     def body(self):
         if self.mode == self.MODE_CLASS:
             return self._body
         elif self.mode == self.MODE_EXTENDS:
+            self.map_lines += 1
             return self.EXTENDS_BODY.format(body=text_indent(self._body))
         elif self.mode == self.MODE_SIMPLE:
+            self.map_lines += 3
             return self.EXTENDS_BODY.format(
                 body=text_indent(self.SIMPLE_BODY.format(
                     body=text_indent(self._body)
@@ -109,7 +108,7 @@ func _ready():
 
     @property
     def name(self):
-        return 'GodotClass' if self._name is None else self._name
+        return '__GeneratedGodotClass__' if self._name is None else self._name
 
     def full_body(self):
         return self.CLASS_BODY.format(
@@ -221,9 +220,11 @@ class ScriptProcess(object):
             os.path.join(os.path.abspath(os.getcwd()), self.script)
         )
         if self.script_body.path is not None:
-            cmd = cmd + ('-path', self.script_body.path)
+            cmd = cmd + ('-p', self.script_body.path)
         if VERBOSE:
             print('GODOT COMMAND:', cmd)
+        if 'win' in sys.platform:
+            cmd = cmd + ('--no-window',)
         return cmd
 
 
@@ -252,10 +253,34 @@ class ScriptProcess(object):
             process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
 
         output_list = []
+        re_ogl = re.compile(r'OpenGL ES [23]\.0 Renderer:')
+        re_err = re.compile(r'\.gd:(\d+)')
         while True:
+            ignore_next = False
+            error = None
             for line in process.stdout.readlines():
-                output_list.append(line.decode('utf-8').strip())
-                print(line.decode('utf-8').strip())
+                uline = line.decode('utf-8').strip()
+                output_list.append(uline)
+                if not ignore_next:
+                    if VERBOSE:
+                        print(uline)
+                    elif error is not None:
+                        line_err = int(re_err.search(uline).group(1))
+                        line_err -= self.script_body.map_lines
+                        print(error)
+                        print('\tAt: <script>:%s' % line_err)
+                        error = None
+                    else:
+                        if 'SCRIPT ERROR: ' in uline:
+                            error = uline.replace('SCRIPT ERROR: ', '').replace('GDScript::reload: ', '')
+                        elif 'WARNING: ' in uline or 'ERROR: ' in uline:
+                            if 'WARNING: cleanup: ObjectDB Instances still exist' in uline:
+                                print('WARNING: Possible memory leak!')
+                            ignore_next = True
+                        elif re_ogl.match(uline) is None:
+                            print(uline)
+                else:
+                    ignore_next = False
             if process.poll() is not None:
                 break
 
@@ -291,7 +316,7 @@ class GodotREPL(object):
         """Executes one line of code."""
         script = GodotScript.from_simple(code)
         process = self._create_process(script)
-        return process.exec_godot_script()
+        process.exec_godot_script()
 
     def block(self, code):
         """Executes a block of code."""
@@ -301,12 +326,12 @@ class GodotREPL(object):
         elif mode == 'class':
             script = GodotScript.from_file_cls(path, wait)
         process = self._create_process(script)
-        return process.exec_godot_script()
+        process.exec_godot_script()
 
     def eval(self, expression):
         """Evaluates a boolean expression."""
         code = 'print(bool({0}))'.format(expression)
-        return self.oneline(code)
+        self.oneline(code)
 
     def file(self, path, mode='extends', wait=1):
         """Executes a script file <script.gd>."""
@@ -316,7 +341,7 @@ class GodotREPL(object):
         elif mode == 'class':
             script = GodotScript.from_file_cls(path, wait)
         process = self._create_process(script)
-        return process.exec_godot_script()
+        process.exec_godot_script()
 
 
 
