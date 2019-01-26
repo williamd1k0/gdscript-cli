@@ -27,9 +27,7 @@ THE SOFTWARE.
 # TODO: Add an error handler
 # TODO: Fix/Sync script line number
 # TODO: Improve script template
-# TODO: Remove `fire` module (cool module but bloated)
 # TODO: Add documentation...
-# TODO: Add verbose mode/command (not a priority)
 # TODO: Profit :P
 
 
@@ -39,7 +37,7 @@ import sys
 import re
 
 
-__version__ = 0, 1, 0
+__version__ = 0, 2, 0
 
 VERBOSE = False
 #GODOT_BINARY = r'./Godot_v2.1.2-stable_linux_server.64'
@@ -298,9 +296,9 @@ class ScriptProcess(object):
         return self.execute_script()
 
 
-class GodotREPL(object):
+class GDSCriptCLI(object):
     """
-    Godot REPL implementation.
+    GDSCript Command-Line implementation.
     """
 
     def __init__(self, godot, output_analyzer=None):
@@ -346,9 +344,24 @@ class GodotREPL(object):
 
 
 if __name__ == '__main__':
-    import fire
+    import argparse
 
-    fire.Fire(
-        GodotREPL(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT]),
-        name='gdscript'
-    )
+    parser = argparse.ArgumentParser('gdscript')
+    parser.add_argument('input', type=str, help='Input script (program passed in as string or file)')
+    parser.add_argument('-o', '--one-line', action='store_true', help='One-liner code (without class declaration)')
+    parser.add_argument('-e', '--eval', action='store_true', help='Evaluate a boolean expression')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output (default Godot behavior)')
+    parser.add_argument('-m', '--mode', type=str, default='extends', help='Not implemented yed (ignore it)')
+    parser.add_argument('-w', '--wait', type=float, default=0.1, help='!Hacky! Delay to wait for (only if using Timer or _process)')
+
+    args = parser.parse_args()
+    VERBOSE = args.verbose
+    GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT])
+    if args.one_line:
+        GD.oneline(args.input)
+    elif args.eval:
+        GD.eval(args.input)
+    elif args.input.endswith('.gd'):
+        GD.file(args.input, args.mode, args.wait)
+    else:
+        GD.block(args.input)
