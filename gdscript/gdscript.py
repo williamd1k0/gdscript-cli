@@ -35,15 +35,15 @@ import os
 import subprocess
 import sys
 import re
-
+from tempfile import NamedTemporaryFile as tempfile
+from tempfile import gettempdir
 
 __version__ = 0, 3, 0
 
-VERBOSE1 = False
-VERBOSE2 = False
-VERBOSE3 = False
-#GODOT_BINARY = r'./Godot_v2.1.2-stable_linux_server.64'
-GODOT_BINARY = os.environ.get('GODOT_BINARY', 'godot.exe')
+VERBOSE1 = False # gdscript-cli logs
+VERBOSE2 = False # default godot behavior
+VERBOSE3 = False # godot verbose mode
+GODOT_BINARY = os.environ.get('GODOT_BINARY', 'godot')
 DEFAULT_OUTPUT = os.environ.get('DEFAULT_OUTPUT', 'windows')
 
 
@@ -208,7 +208,7 @@ OUTPUT_PROCESSES = {
 class ScriptProcess(object):
     ROOT = os.path.dirname(os.path.abspath(sys.argv[0]))
     index = 0
-    script_name = '.gdscript{0}.gd'
+    script_path = None
     godot_bin = ''
 
     def __init__(self, script_body, index=0, gdbin=None, op=OutputProcess):
@@ -219,11 +219,14 @@ class ScriptProcess(object):
 
     @property
     def script(self):
-        if self.script_body.path is not None:
-            return os.path.join(
-                self.script_body.path, self.script_name.format(self.index)
-            )
-        return self.script_name.format(self.index)
+        if self.script_path is None:
+            path = None
+            if self.script_body.path is not None:
+                path = self.script_body.path
+            temp = tempfile('w', encoding='utf-8', suffix='.gd', dir=path, delete=False)
+            self.script_path = temp.name
+            temp.close()
+        return self.script_path
 
     @property
     def command(self):
@@ -244,7 +247,7 @@ class ScriptProcess(object):
 
     def output(self, mode):
         return open(
-            os.path.join(self.ROOT, '.gdscript{0}.log'.format(self.index)),
+            os.path.join(gettempdir(), 'gdscript.log'),
             mode
         )
 
