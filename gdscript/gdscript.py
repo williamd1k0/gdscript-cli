@@ -371,11 +371,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     VERBOSE = args.verbose
     GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT])
+    INPUT = args.input
+    if args.input == '-':
+        if VERBOSE: print('[gdscript] Reading from STDIN')
+        INPUT = '\n'.join(sys.stdin.readlines())
     if args.one_line:
-        GD.oneline(args.input, args.timeout, not args.quit_manually)
+        GD.oneline(INPUT, args.timeout, not args.quit_manually)
     elif args.eval:
-        GD.eval(args.input)
+        GD.eval(INPUT)
     elif args.input.endswith('.gd'):
-        GD.file(args.input, 'extends', args.timeout, not args.quit_manually)
+        GD.file(INPUT, 'extends', args.timeout, not args.quit_manually)
     else:
-        GD.block(args.input, args.timeout, not args.quit_manually)
+        GD.block(INPUT, args.timeout, not args.quit_manually)
