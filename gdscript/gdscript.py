@@ -37,10 +37,11 @@ import sys
 import re
 
 
-__version__ = 0, 2, 0
+__version__ = 0, 3, 0
 
 VERBOSE1 = False
 VERBOSE2 = False
+VERBOSE3 = False
 #GODOT_BINARY = r'./Godot_v2.1.2-stable_linux_server.64'
 GODOT_BINARY = os.environ.get('GODOT_BINARY', 'godot.exe')
 DEFAULT_OUTPUT = os.environ.get('DEFAULT_OUTPUT', 'windows')
@@ -232,6 +233,8 @@ class ScriptProcess(object):
         )
         if self.script_body.path is not None:
             cmd = cmd + ('-p', self.script_body.path)
+        if VERBOSE3:
+            cmd = cmd + ('-v',)
         if VERBOSE2:
             print('GODOT COMMAND:', cmd)
         if 'win' in sys.platform:
@@ -372,6 +375,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     VERBOSE1 = args.verbose > 0
     VERBOSE2 = args.verbose > 1
+    VERBOSE3 = args.verbose > 2
     GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT])
     INPUT = args.input
     if args.input == '-':
