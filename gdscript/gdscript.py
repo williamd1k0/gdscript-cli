@@ -39,7 +39,8 @@ import re
 
 __version__ = 0, 2, 0
 
-VERBOSE = False
+VERBOSE1 = False
+VERBOSE2 = False
 #GODOT_BINARY = r'./Godot_v2.1.2-stable_linux_server.64'
 GODOT_BINARY = os.environ.get('GODOT_BINARY', 'godot.exe')
 DEFAULT_OUTPUT = os.environ.get('DEFAULT_OUTPUT', 'windows')
@@ -121,7 +122,7 @@ func _ready():
 
     def full_body(self):
         return self.CLASS_BODY.format(
-            body=self.body, name=self.name, timeout=self.timeout, autoquit=self.autoquit, verbose=int(VERBOSE)
+            body=self.body, name=self.name, timeout=self.timeout, autoquit=self.autoquit, verbose=int(VERBOSE1)
         )
 
     def __repr__(self):
@@ -231,7 +232,7 @@ class ScriptProcess(object):
         )
         if self.script_body.path is not None:
             cmd = cmd + ('-p', self.script_body.path)
-        if VERBOSE:
+        if VERBOSE2:
             print('GODOT COMMAND:', cmd)
         if 'win' in sys.platform:
             cmd = cmd + ('--no-window',)
@@ -272,7 +273,7 @@ class ScriptProcess(object):
                 uline = line.decode('utf-8').strip()
                 output_list.append(uline)
                 if not ignore_next:
-                    if VERBOSE:
+                    if VERBOSE2:
                         print(uline)
                     elif error is not None:
                         line_err = int(re_err.search(uline).group(1))
@@ -365,15 +366,16 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--eval', action='store_true', help='evaluate a boolean expression (exit code)')
     parser.add_argument('-q', '--quit-manually', action='store_true', help='call get_tree().quit() manually (if using Timer or _process)')
     parser.add_argument('-t', '--timeout', type=float, default=0, metavar='<seconds>', help='process timeout (if using Timer or _process)')
-    parser.add_argument('-v', '--verbose', action='store_true', help='verbose output (default Godot behavior)')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='verbose level (wrapper or default Godot behavior)')
     # parser.add_argument('-m', '--mode', type=str, default='extends', help='Not implemented yed (ignore it)')
 
     args = parser.parse_args()
-    VERBOSE = args.verbose
+    VERBOSE1 = args.verbose > 0
+    VERBOSE2 = args.verbose > 1
     GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT])
     INPUT = args.input
     if args.input == '-':
-        if VERBOSE: print('[gdscript] Reading from STDIN')
+        if VERBOSE1: print('[gdscript] Reading from STDIN')
         INPUT = '\n'.join(sys.stdin.readlines())
     if args.eval:
         GD.eval(INPUT)
