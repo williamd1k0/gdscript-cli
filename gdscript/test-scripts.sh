@@ -1,9 +1,9 @@
 #!/usr/bin/sh
 
 echo "One line tests ->"
-python gdscript.py -o "print('Hello World from command-line!')"
-python gdscript.py -o "print(Engine.get_version_info())"
-python gdscript.py -o "print(OS.get_screen_size(0))"
+python gdscript.py "print('Hello World from command-line!')"
+python gdscript.py "print(Engine.get_version_info())"
+python gdscript.py "print(OS.get_screen_size(0))"
 
 echo ''
 echo "Block tests ->"
@@ -24,3 +24,9 @@ python gdscript.py 'test/EvaluateData.gd'
 python gdscript.py 'test/Import.gd'
 python gdscript.py 'test/Extends.gd'
 python gdscript.py 'test/Enums.gd'
+
+
+echo ''
+echo "STDIN tests ->"
+echo "print('PIPE stdin')" | python gdscript.py -
+python gdscript.py - < 'test/Bhaskara.gd'

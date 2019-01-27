@@ -331,11 +331,12 @@ class GDSCriptCLI(object):
 
     def block(self, code, timeout=0, autoquit=True):
         """Executes a block of code."""
-        mode, path, wait = None, None, None
+        if re.search(r'^extends\s', code, re.M) is None:
+            self.oneline(code, timeout=timeout, autoquit=autoquit)
         if True: # mode == 'extends':
-            script = GodotScript(code)
+            script = GodotScript(code, timeout=timeout, autoquit=autoquit)
         elif mode == 'class':
-            script = GodotScript.from_file_cls(path, wait)
+            script = GodotScript.from_file_cls(path, timeout, autoquit)
         process = self._create_process(script)
         sys.exit(process.exec_godot_script()[1])
 
@@ -361,7 +362,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('gdscript', description='GDScript CLI Wrapper')
     parser.add_argument('input', type=str, help='input script (program passed in as string or file)')
-    parser.add_argument('-o', '--one-line', action='store_true', help='one-liner code (without class declaration)')
     parser.add_argument('-e', '--eval', action='store_true', help='evaluate a boolean expression (exit code)')
     parser.add_argument('-q', '--quit-manually', action='store_true', help='call get_tree().quit() manually (if using Timer or _process)')
     parser.add_argument('-t', '--timeout', type=float, default=0, metavar='<seconds>', help='process timeout (if using Timer or _process)')
@@ -375,9 +375,7 @@ if __name__ == '__main__':
     if args.input == '-':
         if VERBOSE: print('[gdscript] Reading from STDIN')
         INPUT = '\n'.join(sys.stdin.readlines())
-    if args.one_line:
-        GD.oneline(INPUT, args.timeout, not args.quit_manually)
-    elif args.eval:
+    if args.eval:
         GD.eval(INPUT)
     elif args.input.endswith('.gd'):
         GD.file(INPUT, 'extends', args.timeout, not args.quit_manually)

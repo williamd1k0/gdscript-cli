@@ -12,7 +12,7 @@ python gdscript.py 'test/errors/Assertion.gd'
 
 echo ""
 echo "Identifier Not Found tests ->"
-python gdscript.py -o "print(i)"
+python gdscript.py "print(i)"
 python gdscript.py "
 extends Node
 
@@ -23,7 +23,7 @@ python gdscript.py 'test/errors/Identifier.gd'
 
 echo ""
 echo "Type tests ->"
-python gdscript.py -o "print('1'+1)"
+python gdscript.py "print('1'+1)"
 python gdscript.py "
 extends Label
 
@@ -33,7 +33,7 @@ func _ready():
 
 echo ""
 echo "Memory leak tests ->"
-python gdscript.py -o "Node.new()"
+python gdscript.py "Node.new()"
 python gdscript.py "
 extends Node
 
