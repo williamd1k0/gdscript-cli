@@ -38,7 +38,7 @@ import re
 from tempfile import gettempdir
 from tempfile import NamedTemporaryFile as tempfile
 
-__version__ = 0, 3, 0
+__version__ = 0, 4, 0
 
 VERBOSE1 = False # gdscript-cli logs
 VERBOSE2 = False # default godot behavior
@@ -350,6 +350,11 @@ class GDSCriptCLI(object):
         code = 'OS.exit_code = 0 if bool({0}) else 1'.format(expression)
         self.oneline(code)
 
+    def print(self, expression):
+        """Prints a expression."""
+        code = 'print({0})'.format(expression)
+        self.oneline(code)
+
     def file(self, path, mode='extends', timeout=0, autoquit=True):
         """Executes a script file <script.gd>."""
         # TODO: Add automatic mode check
@@ -368,6 +373,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('gdscript', description='GDScript CLI Wrapper')
     parser.add_argument('input', type=str, help='input script (program passed in as string or file)')
     parser.add_argument('-e', '--eval', action='store_true', help='evaluate a boolean expression (exit code)')
+    parser.add_argument('-p', '--print', action='store_true', help='print a simple expression')
     parser.add_argument('-q', '--quit-manually', action='store_true', help='call get_tree().quit() manually (if using Timer or _process)')
     parser.add_argument('-t', '--timeout', type=float, default=0, metavar='<seconds>', help='process timeout (if using Timer or _process)')
     parser.add_argument('-w', '--window', action='store_true', help='show godot window (defaul behavior on X11/MacOS)')
@@ -385,6 +391,8 @@ if __name__ == '__main__':
         INPUT = '\n'.join(sys.stdin.readlines())
     if args.eval:
         GD.eval(INPUT)
+    elif args.print:
+        GD.print(INPUT)
     elif args.input.endswith('.gd'):
         GD.file(INPUT, 'extends', args.timeout, not args.quit_manually)
     else:
