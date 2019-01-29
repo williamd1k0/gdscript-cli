@@ -328,11 +328,14 @@ class GDSCriptCLI(object):
     def _create_process(self, script):
         return ScriptProcess(script, self._godot, self._output, self._window)
 
-    def oneline(self, code, timeout=0, autoquit=True):
+    def oneline(self, code, timeout=0, autoquit=True, sys_exit=True):
         """Executes one line of code."""
         script = GodotScript.from_simple(code, timeout, autoquit)
         process = self._create_process(script)
-        sys.exit(process.exec_godot_script()[1])
+        if sys_exit:
+            sys.exit(process.exec_godot_script()[1])
+        else:
+            process.exec_godot_script()
 
     def block(self, code, timeout=0, autoquit=True):
         """Executes a block of code."""
@@ -353,7 +356,7 @@ class GDSCriptCLI(object):
     def print(self, expression):
         """Prints a expression."""
         code = 'print({0})'.format(expression)
-        self.oneline(code)
+        self.oneline(code, sys_exit=False)
 
     def file(self, path, mode='extends', timeout=0, autoquit=True):
         """Executes a script file <script.gd>."""
@@ -389,10 +392,10 @@ if __name__ == '__main__':
     if args.input == '-':
         if VERBOSE1: print('[gdscript] Reading from STDIN')
         INPUT = '\n'.join(sys.stdin.readlines())
+    if args.print:
+        GD.print(INPUT)
     if args.eval:
         GD.eval(INPUT)
-    elif args.print:
-        GD.print(INPUT)
     elif args.input.endswith('.gd'):
         GD.file(INPUT, 'extends', args.timeout, not args.quit_manually)
     else:
