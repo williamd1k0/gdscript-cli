@@ -35,8 +35,8 @@ import os
 import subprocess
 import sys
 import re
-from tempfile import NamedTemporaryFile as tempfile
 from tempfile import gettempdir
+from tempfile import NamedTemporaryFile as tempfile
 
 __version__ = 0, 3, 0
 
@@ -82,7 +82,6 @@ func _init():
         quit()
     if {verbose}: prints('[gdscript]', '_init DONE')
 """
-# TODO: Add wait mode - requires get_tree().quit()
 
     EXTENDS_BODY = """class __GeneratedGodotClass__:
 {body}
@@ -211,11 +210,11 @@ class ScriptProcess(object):
     script_path = None
     godot_bin = ''
 
-    def __init__(self, script_body, index=0, gdbin=None, op=OutputProcess):
+    def __init__(self, script_body, gdbin=None, op=OutputProcess, window=False):
         self.script_body = script_body
-        self.index = index
         self.godot_bin = gdbin
         self.output_process_class = op
+        self.window = window
 
     @property
     def script(self):
@@ -235,13 +234,13 @@ class ScriptProcess(object):
             os.path.join(os.path.abspath(os.getcwd()), self.script)
         )
         if self.script_body.path is not None:
-            cmd = cmd + ('-p', self.script_body.path)
+            cmd = cmd + ('--path', self.script_body.path)
         if VERBOSE3:
             cmd = cmd + ('-v',)
         if VERBOSE2:
             print('GODOT COMMAND:', cmd)
-        if 'win' in sys.platform:
-            cmd = cmd + ('--no-window',)
+        if not self.window: # and 'win' in sys.platform:
+            cmd = cmd + ('--no-window',) # ignored in x11/MacOS
         return cmd
 
 
@@ -257,7 +256,7 @@ class ScriptProcess(object):
         del gds
 
     def execute_script(self):
-        if 'win' in sys.platform:
+        if not self.window and 'win' in sys.platform:
             info = subprocess.STARTUPINFO()
             info.dwFlags = subprocess.STARTF_USESHOWWINDOW
             info.wShowWindow = 0 # SW_HIDE
@@ -321,14 +320,13 @@ class GDSCriptCLI(object):
     GDSCript Command-Line implementation.
     """
 
-    def __init__(self, godot, output_analyzer=None):
-        self._count = 0
+    def __init__(self, godot, output_analyzer=None, window=False):
         self._godot = godot
         self._output = output_analyzer
+        self._window = window
 
     def _create_process(self, script):
-        self._count += 1
-        return ScriptProcess(script, self._count-1, self._godot, self._output)
+        return ScriptProcess(script, self._godot, self._output, self._window)
 
     def oneline(self, code, timeout=0, autoquit=True):
         """Executes one line of code."""
@@ -372,6 +370,7 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--eval', action='store_true', help='evaluate a boolean expression (exit code)')
     parser.add_argument('-q', '--quit-manually', action='store_true', help='call get_tree().quit() manually (if using Timer or _process)')
     parser.add_argument('-t', '--timeout', type=float, default=0, metavar='<seconds>', help='process timeout (if using Timer or _process)')
+    parser.add_argument('-w', '--window', action='store_true', help='show godot window (defaul behavior on X11/MacOS)')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='verbose level (wrapper or default Godot behavior)')
     # parser.add_argument('-m', '--mode', type=str, default='extends', help='Not implemented yed (ignore it)')
 
@@ -379,7 +378,7 @@ if __name__ == '__main__':
     VERBOSE1 = args.verbose > 0
     VERBOSE2 = args.verbose > 1
     VERBOSE3 = args.verbose > 2
-    GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT])
+    GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT], args.window)
     INPUT = args.input
     if args.input == '-':
         if VERBOSE1: print('[gdscript] Reading from STDIN')
