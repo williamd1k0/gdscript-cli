@@ -371,16 +371,25 @@ class GDSCriptCLI(object):
 
 
 if __name__ == '__main__':
+    if '--version' in sys.argv:
+        print('GDScript CLI Wrapper: v%s.%s.%s by William Tumeo' % __version__)
+        try:
+            subprocess.run([GODOT_BINARY, '--version'], check=True, stdout=subprocess.PIPE)
+        except subprocess.CalledProcessError as perr:
+            print('Godot Engine: %s' % perr.output.decode('utf-8'))
+        sys.exit(0)
+
     import argparse
 
-    parser = argparse.ArgumentParser('gdscript', description='GDScript CLI Wrapper')
+    parser = argparse.ArgumentParser('gdscript', description='GDScript CLI Wrapper', usage='%(prog)s [-epqw] [-t <seconds>] [-v] input\n -h/--help: show help message')
     parser.add_argument('input', type=str, help='input script (program passed in as string or file)')
     parser.add_argument('-e', '--eval', action='store_true', help='evaluate a boolean expression (exit code)')
     parser.add_argument('-p', '--print', action='store_true', help='print a simple expression')
     parser.add_argument('-q', '--quit-manually', action='store_true', help='call get_tree().quit() manually (if using Timer or _process)')
     parser.add_argument('-t', '--timeout', type=float, default=0, metavar='<seconds>', help='process timeout (if using Timer or _process)')
-    parser.add_argument('-w', '--window', action='store_true', help='show godot window (defaul behavior on X11/MacOS)')
+    parser.add_argument('-w', '--window', action='store_true', help='show godot window (default behavior on X11/MacOS)')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='verbose level (wrapper or default Godot behavior)')
+    parser.add_argument('--version', action='store_true', help='print version info')
     # parser.add_argument('-m', '--mode', type=str, default='extends', help='Not implemented yed (ignore it)')
 
     args = parser.parse_args()
@@ -398,5 +407,5 @@ if __name__ == '__main__':
         GD.eval(INPUT)
     elif args.input.endswith('.gd'):
         GD.file(INPUT, 'extends', args.timeout, not args.quit_manually)
-    else:
+    elif not args.print:
         GD.block(INPUT, args.timeout, not args.quit_manually)
