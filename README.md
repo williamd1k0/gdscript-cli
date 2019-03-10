@@ -3,8 +3,9 @@
 GDScript CLI wrapper
 
 ![python](https://img.shields.io/badge/python-3.4%2B-blue.svg?style=flat-square)
-![python](https://img.shields.io/badge/Godot-3.0%2B-blue.svg?style=flat-square)
-![license](https://img.shields.io/github/license/williamd1k0/gdscript-cli.svg?style=flat-square)
+![godot](https://img.shields.io/badge/Godot-3.0%2B-blue.svg?style=flat-square)
+![license](https://img.shields.io/badge/License-Meteor-lightgray.svg?style=flat-square)
+
 
 # About
 
