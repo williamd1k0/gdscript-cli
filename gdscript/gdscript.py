@@ -1,31 +1,29 @@
 """
-The MIT License (MIT)
+Meteor License
 
-Copyright (c) 2019 William Tumeo
+2019 - William Tumeo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+furnished to do so, subject to no conditions.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+The above author notice and this permission notice can be included in all
+copies or substantial portions of the Software, but only if you so desire.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 # WARN: This code is a bit messy, be careful
-# TODO: Add automatic script mode check (priority)
 # TODO: Add an error handler
-# TODO: Fix/Sync script line number
+# TODO: Fix/Sync script line number (remaps)
 # TODO: Improve script template
 # TODO: Add documentation...
 # TODO: Profit :P
@@ -38,7 +36,7 @@ import re
 from tempfile import gettempdir
 from tempfile import NamedTemporaryFile as tempfile
 
-__version__ = 0, 4, 0
+__version__ = 0, 5, 0
 
 VERBOSE1 = False # gdscript-cli logs
 VERBOSE2 = False # default godot behavior
@@ -52,6 +50,19 @@ def text_indent(text):
     for line in text.split('\n'):
         indented += '    '+line+'\n'
     return indented.strip('\n')
+
+# Regex to strip colors on Gnu/Linux
+# Adapted from Colorama (https://github.com/tartley/colorama)
+ANSI_CSI_RE = re.compile('\001?\033\\[((?:\\d|;)*)([a-zA-Z])\002?')
+ANSI_OSC_RE = re.compile('\001?\033\\]((?:.|;)*?)(\x07)\002?')
+
+def strip_osc(text):
+    return ANSI_OSC_RE.sub('', text)
+
+def strip_ansi(text):
+    text = strip_osc(text)
+    return ANSI_CSI_RE.sub('', text)
+
 
 
 class GodotScript(object):
@@ -153,56 +164,6 @@ func _ready():
         # return cls.from_file(path, cls.MODE_CLASS, timeout)
 
 
-class OutputProcess(object):
-
-    def __init__(self, output):
-        self.output = output
-
-    def has_errors(self):
-        return False
-
-    def strip(self):
-        return self.output.strip() # Raw output
-
-    def clean(self):
-        # TODO
-        return self.strip() # No errors output
-
-    def errors(self):
-        # TODO
-        return self.strip() # Errors only output
-
-class WindowsOutput(OutputProcess):
-
-    def strip(self):
-        clean_output = ''
-        for line in self.output.split('\n'):
-            if 'EXEC PATHP??:' in line:
-                continue
-            if 'DETECTED MONITORS:' in line:
-                continue
-            clean_output += line+'\n'
-        return clean_output.strip()
-
-class LinuxServerOutput(OutputProcess):
-
-    def strip(self):
-        clean_output = ''
-        for line in self.output.split('\n'):
-            # FIXME: Ignoring rasterizer errors
-            # servers/visual/visual_server_raster.cpp:4821
-            if '\033[1;31mERROR:' in line:
-                continue
-            if '\033[0;31m   At:' in line:
-                continue
-            clean_output += line+'\n'
-        return clean_output.strip()
-
-OUTPUT_PROCESSES = {
-    'windows': WindowsOutput,
-    'linux-server': LinuxServerOutput
-}
-
 
 class ScriptProcess(object):
     ROOT = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -210,10 +171,9 @@ class ScriptProcess(object):
     script_path = None
     godot_bin = ''
 
-    def __init__(self, script_body, gdbin=None, op=OutputProcess, window=False):
+    def __init__(self, script_body, gdbin=None, window=False):
         self.script_body = script_body
         self.godot_bin = gdbin
-        self.output_process_class = op
         self.window = window
 
     @property
@@ -244,11 +204,8 @@ class ScriptProcess(object):
         return cmd
 
 
-    def output(self, mode):
-        return open(
-            os.path.join(gettempdir(), 'gdscript.log'),
-            mode
-        )
+    def log_output(self):
+        return open(os.path.join(gettempdir(), 'gdscript.log'), 'w')
 
     def save_script(self):
         with open(self.script, 'w', encoding='utf-8') as gds:
@@ -256,59 +213,52 @@ class ScriptProcess(object):
         del gds
 
     def execute_script(self):
-        if not self.window and 'win' in sys.platform:
-            info = subprocess.STARTUPINFO()
-            info.dwFlags = subprocess.STARTF_USESHOWWINDOW
-            info.wShowWindow = 0 # SW_HIDE
-            process = subprocess.Popen(
-                self.command,
-                stdout=subprocess.PIPE,
-                startupinfo=info
-            )
-        else:
-            process = subprocess.Popen(self.command, stdout=subprocess.PIPE)
+        process = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         output_list = []
+        output_list_verbose = []
         re_ogl = re.compile(r'OpenGL ES [23]\.0 Renderer:')
         re_err = re.compile(r'\.gd:(\d+)')
+
+        def push_output(txt):
+        	print(txt)
+        	output_list.append(txt)
         while True:
             ignore_next = False
             error = None
             for line in process.stdout.readlines():
-                uline = line.decode('utf-8').strip()
-                output_list.append(uline)
+                uline = strip_ansi(line.decode('utf-8')).strip()
+                output_list_verbose.append(uline)
                 if not ignore_next:
                     if VERBOSE2:
-                        print(uline)
+                        push_output(uline)
                     elif error is not None:
                         line_err = int(re_err.search(uline).group(1))
                         line_err -= self.script_body.map_lines
-                        print(error)
-                        print('\tAt: <script>:%s' % line_err)
+                        push_output(error)
+                        push_output('\tAt: <script>:%s' % line_err)
                         error = None
                     else:
                         if 'SCRIPT ERROR: ' in uline:
                             error = uline.replace('SCRIPT ERROR: ', '').replace('GDScript::reload: ', '')
                         elif 'WARNING: ' in uline or 'ERROR: ' in uline:
                             if 'WARNING: cleanup: ObjectDB Instances still exist' in uline:
-                                print('WARNING: Possible memory leak!')
+                                push_output('WARNING: Possible memory leak!')
                             ignore_next = True
                         elif re_ogl.match(uline) is None:
-                            print(uline)
+                            push_output(uline)
                 else:
                     ignore_next = False
                 sys.stdout.flush()
             if process.poll() is not None:
                 break
 
-        output = self.output('w')
-        output.write('\n'.join(output_list))
+        output = self.log_output()
+        output_text = '\n'.join(output_list)
+        output.write('\n'.join(output_list_verbose))
         output.close()
-        # TODO: Dynamic output check
-        output_clean = self.output_process_class('\n'.join(output_list))
-        #print(output_clean.strip())
         os.unlink(self.script)
-        return [output_clean.strip(), process.returncode]
+        return [output_text, process.returncode]
 
     def exec_godot_script(self):
         self.save_script()
@@ -320,13 +270,12 @@ class GDSCriptCLI(object):
     GDSCript Command-Line implementation.
     """
 
-    def __init__(self, godot, output_analyzer=None, window=False):
+    def __init__(self, godot, window=False):
         self._godot = godot
-        self._output = output_analyzer
         self._window = window
 
     def _create_process(self, script):
-        return ScriptProcess(script, self._godot, self._output, self._window)
+        return ScriptProcess(script, self._godot, self._window)
 
     def oneline(self, code, timeout=0, autoquit=True, sys_exit=True):
         """Executes one line of code."""
@@ -335,18 +284,21 @@ class GDSCriptCLI(object):
         if sys_exit:
             sys.exit(process.exec_godot_script()[1])
         else:
-            process.exec_godot_script()
+            return process.exec_godot_script()
 
-    def block(self, code, timeout=0, autoquit=True):
+    def block(self, code, timeout=0, autoquit=True, sys_exit=True):
         """Executes a block of code."""
         if re.search(r'^extends\s', code, re.M) is None:
-            self.oneline(code, timeout=timeout, autoquit=autoquit)
+            return self.oneline(code, timeout=timeout, autoquit=autoquit, sys_exit=sys_exit)
         if True: # mode == 'extends':
             script = GodotScript(code, timeout=timeout, autoquit=autoquit)
         elif mode == 'class':
             script = GodotScript.from_file_cls(path, timeout, autoquit)
         process = self._create_process(script)
-        sys.exit(process.exec_godot_script()[1])
+        if sys_exit:
+            sys.exit(process.exec_godot_script()[1])
+        else:
+            return process.exec_godot_script()
 
     def eval(self, expression):
         """Evaluates a boolean expression."""
@@ -396,7 +348,7 @@ if __name__ == '__main__':
     VERBOSE1 = args.verbose > 0
     VERBOSE2 = args.verbose > 1
     VERBOSE3 = args.verbose > 2
-    GD = GDSCriptCLI(GODOT_BINARY, OUTPUT_PROCESSES[DEFAULT_OUTPUT], args.window)
+    GD = GDSCriptCLI(GODOT_BINARY, args.window)
     INPUT = args.input
     if args.input == '-':
         if VERBOSE1: print('[gdscript] Reading from STDIN')
