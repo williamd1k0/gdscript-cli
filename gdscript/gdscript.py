@@ -1,7 +1,7 @@
 """
 Meteor License
 
-2019 - William Tumeo
+2020 - William Tumeo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ import json
 from tempfile import gettempdir
 from tempfile import NamedTemporaryFile as tempfile
 
-__version__ = 0, 6, 0
+__version__ = 0, 7, 0
 
 VERBOSE1 = False # gdscript-cli logs
 VERBOSE2 = False # default godot behavior
@@ -212,7 +212,7 @@ class ScriptProcess(object):
         with open(self.script, 'w', encoding='utf-8') as gds:
             gds.write(str(self.script_body))
         del gds
-    
+
     def parse_json(self, output):
         re_err = re.compile(r'At:\s<script>:(\d+)')
         err_line = re_err.search(output)
