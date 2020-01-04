@@ -239,6 +239,7 @@ class ScriptProcess(object):
         output_list_verbose = []
         re_ogl = re.compile(r'OpenGL ES [23]\.0 Renderer:')
         re_err = re.compile(r'\.gd:(\d+)')
+        re_ver = re.compile(r'Godot Engine v\d\.\d\.\d')
 
         def push_output(txt):
             if not self.json:
@@ -266,7 +267,7 @@ class ScriptProcess(object):
                             if 'WARNING: cleanup: ObjectDB Instances still exist' in uline:
                                 push_output('WARNING: Possible memory leak!')
                             ignore_next = True
-                        elif re_ogl.match(uline) is None:
+                        elif re_ogl.match(uline) is None and re_ver.match(uline) is None:
                             push_output(uline)
                 else:
                     ignore_next = False
