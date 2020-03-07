@@ -314,6 +314,7 @@ class GDSCriptCLI(object):
 
     def block(self, code, timeout=0, autoquit=True, sys_exit=True):
         """Executes a block of code."""
+        code = code.replace('\t', '    ')
         if re.search(r'^extends\s', code, re.M) is None:
             return self.oneline(code, timeout=timeout, autoquit=autoquit, sys_exit=sys_exit)
         if True: # mode == 'extends':
