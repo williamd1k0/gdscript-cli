@@ -40,3 +40,9 @@ extends Node
 func _ready():
     var leak = Node.new()
 "
+
+echo ""
+echo "Timeout tests ->"
+python gdscript.py -t 5 "while true:
+    print(OS.get_system_time_secs())
+    yield(get_tree().create_timer(1), 'timeout')"
