@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """
 Meteor License
 
@@ -170,12 +171,14 @@ class ScriptProcess(object):
     index = 0
     script_path = None
     godot_bin = ''
+    timeout = 0
 
-    def __init__(self, script_body, gdbin=None, window=False, json=False):
+    def __init__(self, script_body, gdbin=None, window=False, json=False, timeout=0):
         self.script_body = script_body
         self.godot_bin = gdbin
         self.window = window
         self.json = json
+        self.timeout = timeout
 
     @property
     def script(self):
@@ -202,6 +205,8 @@ class ScriptProcess(object):
             print('GODOT COMMAND:', cmd)
         if not self.window: # and 'win' in sys.platform:
             cmd = cmd + ('--no-window',) # ignored in x11/MacOS
+        if self.timeout > 0:
+            return ('timeout', '-s', 'KILL', str(self.timeout)) + cmd
         return cmd
 
 
@@ -304,13 +309,14 @@ class GDSCriptCLI(object):
     GDSCript Command-Line implementation.
     """
 
-    def __init__(self, godot, window=False, json=False):
+    def __init__(self, godot, window=False, json=False, timeout=0):
         self._godot = godot
         self._window = window
         self._json = json
+        self._timeout = timeout
 
     def _create_process(self, script):
-        return ScriptProcess(script, self._godot, self._window, self._json)
+        return ScriptProcess(script, self._godot, self._window, self._json, self._timeout)
 
     def oneline(self, code, timeout=0, autoquit=True, sys_exit=True):
         """Executes one line of code."""
@@ -385,7 +391,7 @@ if __name__ == '__main__':
     VERBOSE1 = args.verbose > 0
     VERBOSE2 = args.verbose > 1
     VERBOSE3 = args.verbose > 2
-    GD = GDSCriptCLI(GODOT_BINARY, args.window, args.json)
+    GD = GDSCriptCLI(GODOT_BINARY, args.window, args.json, args.timeout)
     INPUT = args.input
     if args.input == '-':
         if VERBOSE1: print('[gdscript] Reading from STDIN')
