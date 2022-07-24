@@ -25,7 +25,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # WARN: This code is a bit messy, be careful
 # TODO: Add an error handler
-# TODO: Fix/Sync script line number (remaps)
 # TODO: Improve script template
 # TODO: Add documentation...
 # TODO: Profit :P
@@ -39,7 +38,7 @@ import json
 from tempfile import gettempdir
 from tempfile import NamedTemporaryFile as tempfile
 
-__version__ = 0, 8, 1
+__version__ = 0, 9, 0
 
 VERBOSE1 = False # gdscript-cli logs
 VERBOSE2 = False # default godot behavior
