@@ -367,10 +367,13 @@ class GDSCriptCLI(object):
 if __name__ == '__main__':
     if '--version' in sys.argv:
         print('GDScript CLI Wrapper: v%s.%s.%s by William Tumeo' % __version__)
+        version_info = "unknown"
         try:
-            subprocess.run([GODOT_BINARY, '--version'], check=True, stdout=subprocess.PIPE)
+            sub_proc = subprocess.run([GODOT_BINARY, '--version'], check=True, stdout=subprocess.PIPE)
+            version_info = sub_proc.stdout.decode('utf-8').strip() # Godot 4.x
         except subprocess.CalledProcessError as perr:
-            print('Godot Engine: %s' % perr.output.decode('utf-8').strip())
+            version_info = perr.output.decode('utf-8').strip() # Godot 3.x
+        print('Godot Engine: %s' % version_info)
         sys.exit(0)
 
     import argparse
